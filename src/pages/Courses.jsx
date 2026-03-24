@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { useEffect, useState, useRef } from 'react'
-import { Pencil, Trash2, Plus, BookOpen, AlertCircle, Upload, FileText, X } from 'lucide-react'
+import { Pencil, Trash2, Plus, BookOpen, AlertCircle, Upload, FileText, X, Eye } from 'lucide-react'
 
 export default function Courses() {
   const [courseName, setCourseName] = useState('')
@@ -10,12 +10,14 @@ export default function Courses() {
   const [courseToEdit, setCourseToEdit] = useState(null)
   const [editFile, setEditFile] = useState(null)
   const [error, setError] = useState('')
+  const [previewCourse, setPreviewCourse] = useState(null)
   const fileInputRef = useRef(null)
   const editFileInputRef = useRef(null)
 
   const fetchCourses = async () => {
     try {
       const res = await axios.get("http://localhost:5000/course")
+      console.log("courses :", res.data.courses)
       setCourses(res.data.courses)
     } catch (err) {
       console.error(err)
@@ -94,7 +96,7 @@ export default function Courses() {
       setCourseToEdit(null)
       setEditFile(null)
       if (editFileInputRef.current) editFileInputRef.current.value = ''
-      fetchCourses()
+      fetchCourses();
     } catch (err) {
       console.error(err)
       setError('Failed to update course.')
@@ -242,6 +244,14 @@ export default function Courses() {
                   )}
                 </div>
                 <div className='flex gap-2 shrink-0'>
+                  {course.filename && (
+                    <button
+                      className='flex items-center gap-1.5 bg-white border border-slate-300 hover:bg-slate-50 hover:text-indigo-600 text-slate-700 font-medium py-1.5 px-3 rounded-md transition-all'
+                      onClick={() => setPreviewCourse(course)}
+                    >
+                      <Eye className="w-4 h-4" /> Preview
+                    </button>
+                  )}
                   <button
                     className='flex items-center gap-1.5 bg-white border border-slate-300 hover:bg-slate-50 hover:text-blue-600 text-slate-700 font-medium py-1.5 px-3 rounded-md transition-all'
                     onClick={() => handleEditClicked(course)}
@@ -266,6 +276,38 @@ export default function Courses() {
           </div>
         )}
       </div>
+
+      {previewCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setPreviewCourse(null)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-slate-500" />
+                <span className="font-semibold text-slate-800">{previewCourse.name}</span>
+                <span className="text-sm text-slate-400">— {previewCourse.filename}</span>
+              </div>
+              <button onClick={() => setPreviewCourse(null)} className="p-1 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-2 min-h-0">
+              {/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(previewCourse.filename) ? (
+                <img
+                  src={`http://localhost:5000/course/${previewCourse.id}/file`}
+                  alt={previewCourse.name}
+                  className="max-w-full mx-auto rounded"
+                />
+              ) : (
+                <iframe
+                  src={`http://localhost:5000/course/${previewCourse.id}/file`}
+                  title={previewCourse.name}
+                  className="w-full h-full min-h-[70vh] rounded border border-slate-200"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
